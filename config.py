@@ -17,6 +17,7 @@ class Config:
     MYSQL_URL = 'mysql+mysqlconnector://{user}:{password}@{host}/{database}'
     DB_USERNAME = os.environ.get('DB_USERNAME')
     DB_PASSWORD = os.environ.get('DB_PASSWORD')
+    SSL_REDIRECT = False
 
     FLASKY_POSTS_PER_PAGE = 10
 
@@ -48,7 +49,7 @@ class ProductionConfig(Config):
                  'user': Config.DB_USERNAME,
                  'password': Config.DB_PASSWORD,
                  'database': 'Flasky'}
-    SQLALCHEMY_DATABASE_URI = Config.MYSQL_URL.format(**DB_CONFIG)
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or Config.MYSQL_URL.format(**DB_CONFIG)
 
     @classmethod
     def init_app(cls, app):
@@ -74,10 +75,26 @@ class ProductionConfig(Config):
         app.logger.addHandler(mail_handler)
 
 
+class HerokuConfig(ProductionConfig):
+    ProductionConfig.SSL_REDIRECT = True if os.environ.get('DYNO') else False
+
+    @classmethod
+    def init_app(cls, app):
+        super().init_app(app)
+
+        import logging
+        file_handler = logging.StreamHandler()
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+
+        from werkzeug.contrib.fixers import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app)
+
 
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
     'production': ProductionConfig,
+    'heroku': HerokuConfig,
     'default': DevelopmentConfig
 }

@@ -37,6 +37,10 @@ def create_app(config_name):
     app.config.from_object(config_class)
     config_class.init_app(app)
 
+    if app.config.get('SSL_REDIRECT'):
+        from flask_sslify import SSLify
+        sslify = SSLify(app)
+
     bootstrap.init_app(app)
     mail.init_app(app)
     moment.init_app(app)
