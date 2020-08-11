@@ -1,0 +1,3 @@
+Dear {{ user.name }},
+    To confirm, please click on the URL:
+    {{ url_for('auth.confirm', token=token, _external=True) }}
